@@ -21,6 +21,7 @@ export function newGame(seed, deckCounts) {
     playedThisTurn: [], // element keys played by the player this turn
     resonance: 0, // consecutive same-element plays this turn
     lastElement: null,
+    tableCards: [], // last 3 cards played, newest first: {uid, id, who}
     log: [],
     stats: { damageDealt: 0, damageTaken: 0, cardsPlayed: 0, healed: 0, shielded: 0 },
     message: '',
@@ -80,6 +81,8 @@ export function applyCard(state, side, foeSide, cardUid, who) {
   side.mana -= def.cost;
   const [played] = hand.splice(idx, 1);
   side.discard.push(played);
+  state.tableCards.unshift({ uid: played.uid, id: played.id, who });
+  if (state.tableCards.length > 3) state.tableCards.length = 3;
   state.stats.cardsPlayed += 1;
   if (who === 'player') {
     state.playedThisTurn.push(def.element);

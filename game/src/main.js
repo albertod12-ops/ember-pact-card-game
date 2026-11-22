@@ -127,6 +127,11 @@ function presetTable() {
   state.playedThisTurn = ['flame'];
   state.lastElement = 'flame';
   state.resonance = 1;
+  state.tableCards = [
+    { uid: 'cinder-fan#1', id: 'cinder-fan', who: 'player' },
+    { uid: 'tide-wall#1', id: 'tide-wall', who: 'player' },
+    { uid: 'x3', id: 'thorn-whip', who: 'foe' },
+  ];
   state.log = [
     'Cinder Fan hits for 9 (+2 resonance).',
     'Tide Wall raises 7 shield.',
@@ -147,6 +152,11 @@ function presetWin() {
   state.phase = 'won';
   state.message = 'The Warden kneels. The pact is yours.';
   state.log = ['Nova hits for 13. The Warden falls.', 'Victory! The Warden falls.'];
+  state.tableCards = [
+    { uid: 'star-lance#1', id: 'star-lance', who: 'player' },
+    { uid: 'x4', id: 'star-ward', who: 'foe' },
+    { uid: 'nova#1', id: 'nova', who: 'player' },
+  ];
   state.stats = { damageDealt: 31, damageTaken: 12, cardsPlayed: 14, healed: 5, shielded: 15 };
 }
 
@@ -158,6 +168,11 @@ function presetLoss() {
   state.phase = 'lost';
   state.message = 'Your embers fade. The Warden prevails.';
   state.log = ['The Warden plays Inferno for 12.', 'Defeat. The Warden stands.'];
+  state.tableCards = [
+    { uid: 'mend#1', id: 'mend', who: 'player' },
+    { uid: 'x1', id: 'ember-slash', who: 'foe' },
+    { uid: 'inferno#1', id: 'inferno', who: 'foe' },
+  ];
   state.stats = { damageDealt: 19, damageTaken: 30, cardsPlayed: 11, healed: 7, shielded: 10 };
 }
 

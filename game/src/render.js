@@ -56,6 +56,20 @@ function backHtml(i) {
   return `<div class="card back" style="--rot:${(i - 2) * 4}deg"><div class="back-glyph">✦</div><div class="back-name">PACT</div></div>`;
 }
 
+function trayHtml(state) {
+  if (state.tableCards.length === 0) return '<div class="tray-empty">No cards played yet — the table is waiting.</div>';
+  return `<div class="tray">${state.tableCards.slice().reverse().map((t) => {
+    const def = cardById(t.id);
+    const e = ELEMENTS[def.element];
+    return `<div class="tray-chip" style="--el:${e.color};--eld:${e.dark}">
+      <span class="tray-who">${t.who === 'player' ? 'YOU' : 'WARDEN'}</span>
+      <span class="tray-glyph">${e.glyph}</span>
+      <span class="tray-name">${esc(def.name)}</span>
+      <span class="tray-power">${kindLabel(def.kind)} ${def.power}</span>
+    </div>`;
+  }).join('<div class="tray-arrow">→</div>')}</div>`;
+}
+
 function legendHtml() {
   const items = Object.values(ELEMENTS).map((e) =>
     `<div class="legend-item"><span class="legend-glyph" style="color:${e.color}">${e.glyph}</span> ${e.name}</div>`).join('');
@@ -114,6 +128,7 @@ export function render(state, hooks) {
     <div class="table-center">
       <div class="table-title">THE TABLE</div>
       <div class="last-play">LAST PLAY — ${lastPlay}</div>
+      ${trayHtml(state)}
       <div class="resonance-meter">RESONANCE ${state.resonance > 0 ? `×${state.resonance + 1} · +${TUNE.resonanceBonus} next ${state.lastElement ? ELEMENTS[state.lastElement].name : ''} card` : '— play two of one element'}</div>
     </div>
     <div class="table-side">${legendHtml()}</div>
