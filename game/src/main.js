@@ -5,7 +5,7 @@
 
 import { CARDS, DECK_COUNTS, TUNE } from './config.js';
 import { newGame, startDuel, applyCard, beginPlayerTurn, beginFoeTurn, checkEnd, pushLog } from './state.js';
-import { choosePlays } from './ai.js';
+import { choosePlays, readIntent } from './ai.js';
 import { render } from './render.js';
 import { bindInput } from './input.js';
 import { sfxPlay, sfxHit, sfxHeal, sfxWin, sfxLose, sfxClick, sfxDraw, setMuted, isMuted } from './audio.js';
@@ -29,6 +29,9 @@ function sfxFor(result) {
 
 let lastPhase = '';
 function draw() {
+  // The Warden's plan is read fresh every render of the player's turn, so
+  // the intent chip always matches the hand and embers on the table.
+  if (state.phase === 'player') state.intent = readIntent(state);
   render(state, hooks);
   if (state.phase !== lastPhase) {
     if (state.phase === 'won') sfxWin();
@@ -118,15 +121,18 @@ function presetTable() {
     { uid: 'ember-slash#1', id: 'ember-slash' }, { uid: 'cinder-fan#1', id: 'cinder-fan' },
     { uid: 'tide-wall#1', id: 'tide-wall' }, { uid: 'thorn-whip#1', id: 'thorn-whip' },
     { uid: 'star-lance#1', id: 'star-lance' }, { uid: 'mend#1', id: 'mend' },
-    { uid: 'insight#1', id: 'insight' },
+    { uid: 'deep-current#1', id: 'deep-current' },
   ];
   state.foe.hand = [
     { uid: 'x1', id: 'ember-slash' }, { uid: 'x2', id: 'tide-crash' },
     { uid: 'x3', id: 'thorn-whip' }, { uid: 'x4', id: 'star-ward' }, { uid: 'x5', id: 'mend' },
   ];
-  state.playedThisTurn = ['flame'];
+  state.playedThisTurn = ['tide', 'flame', 'flame'];
   state.lastElement = 'flame';
   state.resonance = 1;
+  state.pactChain = false;
+  // The Warden's telegraphed plan for its next turn, as the player reads it.
+  state.intent = { kind: 'strike', element: 'flame', power: 9, text: 'Strike ▲ Flame — about 9 damage' };
   state.tableCards = [
     { uid: 'cinder-fan#1', id: 'cinder-fan', who: 'player' },
     { uid: 'tide-wall#1', id: 'tide-wall', who: 'player' },

@@ -2,7 +2,8 @@
 // One file, one job: turn state into DOM (table, hands, HUD, log, overlays).
 // No game rules here; render.js only shows what state.js decided.
 
-import { ELEMENTS, cardById, kindLabel, TUNE } from './config.js';
+import { ELEMENTS, ELEMENT_ORDER, cardById, kindLabel, TUNE } from './config.js';
+import { distinctElements } from './state.js';
 
 function el(html) {
   const t = document.createElement('template');
@@ -70,12 +71,34 @@ function trayHtml(state) {
   }).join('<div class="tray-arrow">→</div>')}</div>`;
 }
 
+function intentHtml(state) {
+  const intent = state.intent;
+  if (state.phase !== 'player' || !intent) return '';
+  const e = intent.element ? ELEMENTS[intent.element] : null;
+  const lethal = intent.kind === 'strike' && intent.power >= state.player.life + state.player.shield;
+  return `<div class="intent${lethal ? ' lethal' : ''}" style="--el:${e ? e.color : '#b9a8d8'}">
+    <span class="intent-label">WARDEN PLANS</span> ${esc(intent.text)}${lethal ? ' <b>⚠ LETHAL — guard or heal!</b>' : ''}</div>`;
+}
+
+function pactHtml(state) {
+  if (state.phase === 'title') return '';
+  const distinct = distinctElements(state);
+  const pips = ELEMENT_ORDER.map((key) => {
+    const e = ELEMENTS[key];
+    return `<span class="pact-pip${distinct.includes(key) ? ' on' : ''}" style="--el:${e.color}">${e.glyph}</span>`;
+  }).join('');
+  const label = state.pactChain ? 'PACT CHAIN SEALED — drew a card'
+    : `PACT CHAIN ${distinct.length}/3 elements — a third element draws a card`;
+  return `<div class="pact-chain">${pips}<span>${label}</span></div>`;
+}
+
 function legendHtml() {
   const items = Object.values(ELEMENTS).map((e) =>
     `<div class="legend-item"><span class="legend-glyph" style="color:${e.color}">${e.glyph}</span> ${e.name}</div>`).join('');
   return `<div class="legend">
     <div class="legend-title">ELEMENTS</div>${items}
     <div class="legend-rule">Same element twice in a turn:<br><b>RESONANCE +2 power</b></div>
+    <div class="legend-rule">Three different elements in a turn:<br><b>PACT CHAIN — draw 1 card</b></div>
     <div class="legend-rule">Keys: <b>1–7</b> select · <b>Enter</b> play<br><b>E</b> end turn · <b>R</b> restart</div>
   </div>`;
 }
@@ -120,6 +143,7 @@ export function render(state, hooks) {
       <div class="side-name">THE WARDEN <span class="ai-tag">AI OPPONENT</span></div>
       ${lifeBar(f, 'LIFE')}
       ${manaPips(f)}
+      ${intentHtml(state)}
     </div>
     <div class="foe-hand"><div class="hand-label">OPPONENT HAND · ${f.hand.length} cards</div><div class="mini-hand">${foeHand}</div></div>
   </section>
@@ -130,6 +154,7 @@ export function render(state, hooks) {
       <div class="last-play">LAST PLAY — ${lastPlay}</div>
       ${trayHtml(state)}
       <div class="resonance-meter">RESONANCE ${state.resonance > 0 ? `×${state.resonance + 1} · +${TUNE.resonanceBonus} next ${state.lastElement ? ELEMENTS[state.lastElement].name : ''} card` : '— play two of one element'}</div>
+      ${pactHtml(state)}
     </div>
     <div class="table-side">${legendHtml()}</div>
     <div class="table-log"><div class="log-title">BATTLE LOG</div>${logHtml}</div>
@@ -156,7 +181,8 @@ export function render(state, hooks) {
     <div class="title-card">
       <div class="title-kicker">A DUEL OF EMBERS AND ELEMENTS</div>
       <h1>EMBER<br>PACT</h1>
-      <p class="title-sub">Outplay the Warden. Chain one element twice a turn for <b>Resonance +2</b>.<br>
+      <p class="title-sub">Outplay the Warden. Chain one element twice a turn for <b>Resonance +2</b>,<br>
+      or three elements for a <b>Pact Chain draw</b> — and read the Warden's plan before it strikes.<br>
       Reduce the Warden to 0 life before yours runs out.</p>
       <div class="title-elements">${Object.values(ELEMENTS).map((e) =>
         `<span class="title-el" style="color:${e.color}">${e.glyph} ${e.name}</span>`).join('')}</div>

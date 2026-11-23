@@ -20,7 +20,13 @@ export function newGame(seed, deckCounts) {
     foe: newSide(buildDeck(deckCounts, makeSeeded(seed, 77))),
     playedThisTurn: [], // element keys played by the player this turn
     resonance: 0, // consecutive same-element plays this turn
+    pactChain: false, // fired this turn: 3 different elements -> draw 1
+    foePlayedThisTurn: [], // the Warden plays by the same combo rules
+    foeResonance: 0,
+    foePactChain: false,
+    foeLastElement: null,
     lastElement: null,
+    intent: null, // the Warden's telegraphed plan, read before its turn
     tableCards: [], // last 3 cards played, newest first: {uid, id, who}
     log: [],
     stats: { damageDealt: 0, damageTaken: 0, cardsPlayed: 0, healed: 0, shielded: 0 },
@@ -52,10 +58,38 @@ export function pushLog(state, text) {
   if (state.log.length > 6) state.log.length = 6;
 }
 
+// Distinct elements played this turn by one side (Pact Chain progress).
+export function distinctElements(state, who = 'player') {
+  const played = who === 'player' ? state.playedThisTurn : state.foePlayedThisTurn;
+  return [...new Set(played)];
+}
+
+// Pact Chain: playing a third different element in one turn draws a card.
+// The second combo axis beside Resonance (same element twice): a hand is now
+// a choice between going deep on one element or wide across three.
+export function checkPactChain(state, side, who = 'player') {
+  const flag = who === 'player' ? 'pactChain' : 'foePactChain';
+  if (state[flag]) return;
+  if (distinctElements(state, who).length < 3) return;
+  state[flag] = true;
+  const drawn = drawFrom(side.deck, side.hand, 1, TUNE.handLimit);
+  if (who === 'player') {
+    pushLog(state, drawn.length > 0
+      ? 'PACT CHAIN! Three elements in one turn — you draw a card.'
+      : 'PACT CHAIN! Three elements — but your hand is full.');
+  } else {
+    pushLog(state, drawn.length > 0
+      ? 'The Warden seals a PACT CHAIN — it draws a card.'
+      : 'The Warden seals a PACT CHAIN — but its hand is full.');
+  }
+}
+
 // Resonance: playing a card whose element matches the last element played this
 // turn adds +2 to its power. Returns the bonus applied.
-export function resonanceBonus(state, element) {
-  if (state.lastElement === element && state.playedThisTurn.length > 0) return TUNE.resonanceBonus;
+export function resonanceBonus(state, element, who = 'player') {
+  const last = who === 'player' ? state.lastElement : state.foeLastElement;
+  const played = who === 'player' ? state.playedThisTurn : state.foePlayedThisTurn;
+  if (last === element && played.length > 0) return TUNE.resonanceBonus;
   return 0;
 }
 
@@ -76,7 +110,7 @@ export function applyCard(state, side, foeSide, cardUid, who) {
   if (idx === -1) return { ok: false, why: 'not in hand' };
   const def = cardById(hand[idx].id);
   if (side.mana < def.cost) return { ok: false, why: 'not enough embers' };
-  const bonus = who === 'player' ? resonanceBonus(state, def.element) : 0;
+  const bonus = resonanceBonus(state, def.element, who);
   const power = def.power + bonus;
   side.mana -= def.cost;
   const [played] = hand.splice(idx, 1);
@@ -88,6 +122,12 @@ export function applyCard(state, side, foeSide, cardUid, who) {
     state.playedThisTurn.push(def.element);
     state.lastElement = def.element;
     if (bonus > 0) state.resonance += 1;
+    checkPactChain(state, side, 'player');
+  } else {
+    state.foePlayedThisTurn.push(def.element);
+    state.foeLastElement = def.element;
+    if (bonus > 0) state.foeResonance += 1;
+    checkPactChain(state, side, 'foe');
   }
   let detail = '';
   if (def.kind === 'strike') {
@@ -134,6 +174,8 @@ export function beginPlayerTurn(state) {
   state.playedThisTurn = [];
   state.lastElement = null;
   state.resonance = 0;
+  state.pactChain = false;
+  state.intent = null;
   const p = state.player;
   p.maxMana = Math.min(TUNE.maxMana, p.maxMana + 1);
   p.mana = p.maxMana;
@@ -144,8 +186,15 @@ export function beginPlayerTurn(state) {
 }
 
 export function beginFoeTurn(state) {
+  state.foePlayedThisTurn = [];
+  state.foeLastElement = null;
+  state.foeResonance = 0;
+  state.foePactChain = false;
   const f = state.foe;
-  f.maxMana = Math.min(TUNE.maxMana, f.maxMana + 1);
+  // The Warden ramps its embers in step with the player: on its first turn
+  // it plays with the same 3 embers the player had, so neither side sits a
+  // mana step ahead for the whole duel.
+  if (state.turn > 1) f.maxMana = Math.min(TUNE.maxMana, f.maxMana + 1);
   f.mana = f.maxMana;
   drawFrom(f.deck, f.hand, TUNE.drawPerTurn, TUNE.handLimit);
   state.phase = 'opponent';

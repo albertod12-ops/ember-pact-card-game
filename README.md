@@ -4,7 +4,7 @@
 [![rank](https://make.fun/badge/best-card-game-20261122-1826/albertod12-ops/ember-pact-card-game/rank.svg)](https://make.fun/bounty/best-card-game-20261122-1826/leaderboard?utm_source=github&utm_medium=readme&utm_campaign=best-card-game-20261122-1826)
 [![reward](https://make.fun/badge/best-card-game-20261122-1826/albertod12-ops/ember-pact-card-game/reward.svg)](https://make.fun/bounty/best-card-game-20261122-1826?utm_source=github&utm_medium=readme&utm_campaign=best-card-game-20261122-1826)
 
-Ember Pact — an original turn-based card duel against the Warden. Play Flame, Tide, Thorn and Star cards from your hand, chain one element twice in a turn for Resonance +2, and reduce the Warden to 0 life before yours runs out. Keyboard + mouse, offline, static files.
+Ember Pact — an original turn-based card duel against the Warden. Play Flame, Tide, Thorn and Star cards from your hand, chain one element twice in a turn for Resonance +2, or three different elements for a Pact Chain draw, and read the Warden's telegraphed plan before it strikes — then reduce the Warden to 0 life before yours runs out. Keyboard + mouse, offline, static files.
 
 ## Run it
 
